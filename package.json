@@ -1,0 +1,10 @@
+{
+  "name": "xyz.lukasz.ruffles",
+  "displayName": "Ruffles",
+  "version": "11.1.5",
+  "unity": "2021.2",
+  "description": "Networking solution",
+  "keywords": [ "networking", "multiplayer", "udp", "socket" ],
+  "dependencies": {},
+  "samples": []
+}
