@@ -2,7 +2,7 @@
 
 namespace Ruffles.Memory
 {
-    internal class HeapMemory : ManagedMemory
+    public class HeapMemory : ManagedMemory
     {
         public byte[] Buffer
         {

@@ -7,7 +7,7 @@ using Ruffles.Utils;
 namespace Ruffles.Memory
 {
     // Managed memory base class
-    internal abstract class ManagedMemory
+    public abstract class ManagedMemory
     {
         internal abstract string LeakedType { get; }
         internal abstract string LeakedData { get; }
