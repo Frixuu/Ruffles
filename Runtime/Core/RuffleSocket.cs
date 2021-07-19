@@ -74,18 +74,18 @@ namespace Ruffles.Core
         private readonly AutoResetEvent _syncronizedEvent = new AutoResetEvent(false);
         // Syncronized callbacks
         private readonly ReaderWriterLockSlim _syncronizedCallbacksLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
-        private readonly List<NetTuple<SynchronizationContext, SendOrPostCallback>> _syncronizedCallbacks = new List<NetTuple<SynchronizationContext, SendOrPostCallback>>();
+        private readonly List<ValueTuple<SynchronizationContext, SendOrPostCallback>> _synchronizedCallbacks = new List<ValueTuple<SynchronizationContext, SendOrPostCallback>>();
         // Event queue
         private ConcurrentCircularQueue<NetworkEvent> _userEventQueue;
 
         // Processing queue
-        private ConcurrentCircularQueue<NetTuple<HeapMemory, IPEndPoint>> _processingQueue;
+        private ConcurrentCircularQueue<ValueTuple<HeapMemory, IPEndPoint>> _processingQueue;
 
         /// <summary>
         /// Gets a syncronization event that is set when a event is received.
         /// </summary>
         /// <value>The syncronization event.</value>
-        public AutoResetEvent SyncronizationEvent
+        public AutoResetEvent SynchronizationEvent
         {
             get
             {
@@ -166,7 +166,7 @@ namespace Ruffles.Core
 
             try
             {
-                _syncronizedCallbacks.Add(new NetTuple<SynchronizationContext, SendOrPostCallback>(syncContext, callback));
+                _synchronizedCallbacks.Add(new ValueTuple<SynchronizationContext, SendOrPostCallback>(syncContext, callback));
             }
             finally
             {
@@ -193,11 +193,11 @@ namespace Ruffles.Core
 
             try
             {
-                for (int i = _syncronizedCallbacks.Count - 1; i >= 0; i++)
+                for (int i = _synchronizedCallbacks.Count - 1; i >= 0; i++)
                 {
-                    if (_syncronizedCallbacks[i].Item2 == callback)
+                    if (_synchronizedCallbacks[i].Item2 == callback)
                     {
-                        _syncronizedCallbacks.RemoveAt(i);
+                        _synchronizedCallbacks.RemoveAt(i);
                     }
                 }
             }
@@ -222,9 +222,9 @@ namespace Ruffles.Core
 
                 try
                 {
-                    for (int i = 0; i < _syncronizedCallbacks.Count; i++)
+                    for (int i = 0; i < _synchronizedCallbacks.Count; i++)
                     {
-                        _syncronizedCallbacks[i].Item1.Post(_syncronizedCallbacks[i].Item2, this);
+                        _synchronizedCallbacks[i].Item1.Post(_synchronizedCallbacks[i].Item2, this);
                     }
                 }
                 finally
@@ -268,7 +268,7 @@ namespace Ruffles.Core
             if (Config.ProcessingThreads > 0)
             {
                 if (Logging.CurrentLogLevel <= LogLevel.Debug) Logging.LogInfo("Allocating " + Config.ProcessingQueueSize + " processing slots");
-                _processingQueue = new ConcurrentCircularQueue<NetTuple<HeapMemory, IPEndPoint>>(Config.ProcessingQueueSize);
+                _processingQueue = new ConcurrentCircularQueue<ValueTuple<HeapMemory, IPEndPoint>>(Config.ProcessingQueueSize);
             }
             else
             {
@@ -467,7 +467,7 @@ namespace Ruffles.Core
                 // Release user queue
                 _userEventQueue = null;
 
-                while (_processingQueue != null && _processingQueue.TryDequeue(out NetTuple<HeapMemory, IPEndPoint> packet))
+                while (_processingQueue != null && _processingQueue.TryDequeue(out ValueTuple<HeapMemory, IPEndPoint> packet))
                 {
                     // Dealloc all the pending memory to prevent leak detection
                     MemoryManager.DeAlloc(packet.Item1);
@@ -929,7 +929,7 @@ namespace Ruffles.Core
                             memory.VirtualCount = (uint)size;
 
                             // Process off thread
-                            _processingQueue.Enqueue(new NetTuple<HeapMemory, IPEndPoint>(memory, (IPEndPoint)_endpoint));
+                            _processingQueue.Enqueue(new ValueTuple<HeapMemory, IPEndPoint>(memory, (IPEndPoint)_endpoint));
                         }
                         else
                         {
@@ -983,7 +983,7 @@ namespace Ruffles.Core
         {
             try
             {
-                while (_processingQueue.TryDequeue(out NetTuple<HeapMemory, IPEndPoint> packet))
+                while (_processingQueue.TryDequeue(out ValueTuple<HeapMemory, IPEndPoint> packet))
                 {
                     // Process packet
                     HandlePacket(new ArraySegment<byte>(packet.Item1.Buffer, (int)packet.Item1.VirtualOffset, (int)packet.Item1.VirtualCount), packet.Item2, true);
